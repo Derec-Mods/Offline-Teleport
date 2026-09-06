@@ -1,6 +1,5 @@
-package io.github.derexxd.offlineTeleport.data;
+package io.github.derexxd.offlineTeleport.nbt;
 
-import io.github.derexxd.offlineTeleport.data.nbt.Nbt;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -14,11 +13,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public final class OfflineLocationService {
+public final class NbtManager {
 
     private final JavaPlugin plugin;
 
-    public OfflineLocationService(JavaPlugin plugin) {
+    public NbtManager(JavaPlugin plugin) {
         this.plugin = plugin;
     }
 
@@ -35,15 +34,8 @@ public final class OfflineLocationService {
         return Optional.empty();
     }
 
-    public OfflineLocation readLocation(OfflinePlayer player) {
-        Location location = player.getLocation();
-        if (location == null) {
-            return OfflineLocation.missing();
-        }
-        if (location.getWorld() == null) {
-            return OfflineLocation.worldUnavailable("unknown");
-        }
-        return OfflineLocation.found(location);
+    public Location readLocation(OfflinePlayer player) {
+        return player.getLocation();
     }
 
     public boolean writeLocation(OfflinePlayer player, Location location) {

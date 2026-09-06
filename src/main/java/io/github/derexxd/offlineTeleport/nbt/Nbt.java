@@ -1,4 +1,4 @@
-package io.github.derexxd.offlineTeleport.data.nbt;
+package io.github.derexxd.offlineTeleport.nbt;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -18,94 +18,93 @@ import java.util.Map;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-public final class Nbt {
+final class Nbt {
 
-    public static final int END = 0;
-    public static final int BYTE = 1;
-    public static final int SHORT = 2;
-    public static final int INT = 3;
-    public static final int LONG = 4;
-    public static final int FLOAT = 5;
-    public static final int DOUBLE = 6;
-    public static final int BYTE_ARRAY = 7;
-    public static final int STRING = 8;
-    public static final int LIST = 9;
-    public static final int COMPOUND = 10;
-    public static final int INT_ARRAY = 11;
-    public static final int LONG_ARRAY = 12;
+    static final int END = 0;
+    static final int BYTE = 1;
+    static final int SHORT = 2;
+    static final int INT = 3;
+    static final int LONG = 4;
+    static final int FLOAT = 5;
+    static final int DOUBLE = 6;
+    static final int BYTE_ARRAY = 7;
+    static final int STRING = 8;
+    static final int LIST = 9;
+    static final int COMPOUND = 10;
+    static final int INT_ARRAY = 11;
+    static final int LONG_ARRAY = 12;
 
     private Nbt() {
     }
 
-    public record FileData(String name, Compound root) {
+    record FileData(String name, Compound root) {
     }
 
-    public sealed interface Tag permits Compound, ListTag, ByteTag, ShortTag, IntTag, LongTag, FloatTag, DoubleTag, StringTag, ByteArrayTag, IntArrayTag, LongArrayTag {
+    sealed interface Tag permits Compound, ListTag, ByteTag, ShortTag, IntTag, LongTag, FloatTag, DoubleTag, StringTag, ByteArrayTag, IntArrayTag, LongArrayTag {
     }
 
-    public record Compound(Map<String, Tag> tags) implements Tag {
-        public Compound {
+    record Compound(Map<String, Tag> tags) implements Tag {
+        Compound {
             tags = tags instanceof LinkedHashMap<String, Tag> map ? map : new LinkedHashMap<>(tags);
         }
 
-        public void put(String name, Tag tag) {
+        void put(String name, Tag tag) {
             tags.put(name, tag);
         }
     }
 
-    public record ListTag(int type, List<Tag> values) implements Tag {
-        public ListTag {
+    record ListTag(int type, List<Tag> values) implements Tag {
+        ListTag {
             values = values instanceof ArrayList<Tag> list ? list : new ArrayList<>(values);
         }
     }
 
-    public record ByteTag(byte value) implements Tag {
+    record ByteTag(byte value) implements Tag {
     }
 
-    public record ShortTag(short value) implements Tag {
+    record ShortTag(short value) implements Tag {
     }
 
-    public record IntTag(int value) implements Tag {
+    record IntTag(int value) implements Tag {
     }
 
-    public record LongTag(long value) implements Tag {
+    record LongTag(long value) implements Tag {
     }
 
-    public record FloatTag(float value) implements Tag {
+    record FloatTag(float value) implements Tag {
     }
 
-    public record DoubleTag(double value) implements Tag {
+    record DoubleTag(double value) implements Tag {
     }
 
-    public record StringTag(String value) implements Tag {
+    record StringTag(String value) implements Tag {
     }
 
-    public record ByteArrayTag(byte[] value) implements Tag {
+    record ByteArrayTag(byte[] value) implements Tag {
     }
 
-    public record IntArrayTag(int[] value) implements Tag {
+    record IntArrayTag(int[] value) implements Tag {
     }
 
-    public record LongArrayTag(long[] value) implements Tag {
+    record LongArrayTag(long[] value) implements Tag {
     }
 
-    public static FileData readCompressed(Path path) throws IOException {
+    static FileData readCompressed(Path path) throws IOException {
         try (DataInputStream in = new DataInputStream(new BufferedInputStream(new GZIPInputStream(Files.newInputStream(path))))) {
             int type = in.readUnsignedByte();
             if (type != COMPOUND) {
                 throw new IOException("Root NBT tag is not a compound");
             }
-            String name = in.readUTF();
-            return new FileData(name, (Compound) readPayload(COMPOUND, in));
+            return new FileData(in.readUTF(), (Compound) readPayload(COMPOUND, in));
         }
     }
 
-    public static void writeCompressed(Path path, FileData data) throws IOException {
+    static void writeCompressed(Path path, FileData data) throws IOException {
         Path temporary = path.resolveSibling(path.getFileName() + ".tmp");
         try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new GZIPOutputStream(Files.newOutputStream(temporary))))) {
             out.writeByte(COMPOUND);
             out.writeUTF(data.name());
-            writePayload(COMPOUND, data.root(), out);
+            writePayload(data.root(), out);
         }
         try {
             Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
@@ -169,7 +168,7 @@ public final class Nbt {
         };
     }
 
-    private static void writePayload(int type, Tag tag, DataOutput out) throws IOException {
+    private static void writePayload(Tag tag, DataOutput out) throws IOException {
         switch (tag) {
             case ByteTag(byte value) -> out.writeByte(value);
             case ShortTag(short value) -> out.writeShort(value);
@@ -186,15 +185,14 @@ public final class Nbt {
                 out.writeByte(elementType);
                 out.writeInt(values.size());
                 for (Tag value : values) {
-                    writePayload(elementType, value, out);
+                    writePayload(value, out);
                 }
             }
             case Compound(Map<String, Tag> tags) -> {
                 for (Map.Entry<String, Tag> entry : tags.entrySet()) {
-                    int childType = typeOf(entry.getValue());
-                    out.writeByte(childType);
+                    out.writeByte(typeOf(entry.getValue()));
                     out.writeUTF(entry.getKey());
-                    writePayload(childType, entry.getValue(), out);
+                    writePayload(entry.getValue(), out);
                 }
                 out.writeByte(END);
             }

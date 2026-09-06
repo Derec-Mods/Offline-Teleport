@@ -1,27 +1,27 @@
 package io.github.derexxd.offlineTeleport;
 
 import io.github.derexxd.offlineTeleport.config.PluginMessages;
-import io.github.derexxd.offlineTeleport.data.OfflineLocationService;
+import io.github.derexxd.offlineTeleport.nbt.NbtManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class OfflineTeleport extends JavaPlugin {
 
     private PluginMessages messages;
-    private OfflineLocationService locations;
+    private NbtManager nbtManager;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
         messages = new PluginMessages(this);
-        locations = new OfflineLocationService(this);
+        nbtManager = new NbtManager(this);
     }
 
     public PluginMessages getMessages() {
         return messages;
     }
 
-    public OfflineLocationService getLocations() {
-        return locations;
+    public NbtManager getNbtManager() {
+        return nbtManager;
     }
 
     @Override
