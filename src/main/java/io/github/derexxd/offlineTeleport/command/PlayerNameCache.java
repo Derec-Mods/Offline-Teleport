@@ -31,19 +31,11 @@ public final class PlayerNameCache implements Listener {
         names.add(event.getPlayer().getName());
     }
 
-    public List<String> suggestOffline(String prefix) {
-        return suggest(prefix, true);
-    }
-
-    public List<String> suggestAll(String prefix) {
-        return suggest(prefix, false);
-    }
-
-    private List<String> suggest(String prefix, boolean offlineOnly) {
+    public List<String> suggest(String prefix, boolean offlineOnly) {
         String needle = prefix == null ? "" : prefix;
         List<String> matches = new ArrayList<>();
         for (String name : names) {
-            if (!startsWithIgnoreCase(name, needle)) {
+            if (!name.regionMatches(true, 0, needle, 0, needle.length())) {
                 continue;
             }
             if (offlineOnly && Bukkit.getPlayerExact(name) != null) {
@@ -53,9 +45,5 @@ public final class PlayerNameCache implements Listener {
         }
         Collections.sort(matches, String.CASE_INSENSITIVE_ORDER);
         return matches;
-    }
-
-    private boolean startsWithIgnoreCase(String value, String prefix) {
-        return value.regionMatches(true, 0, prefix, 0, prefix.length());
     }
 }

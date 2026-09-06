@@ -34,53 +34,42 @@ public final class NbtManager {
         return Optional.empty();
     }
 
-    public Location readLocation(OfflinePlayer player) {
-        return player.getLocation();
-    }
-
     public boolean writeLocation(OfflinePlayer player, Location location) {
         if (player.isOnline() || location == null || location.getWorld() == null) {
             return false;
         }
 
-        Path file = playerDataFile(player.getUniqueId());
-        if (file == null || !Files.isRegularFile(file)) {
+        List<World> worlds = Bukkit.getWorlds();
+        if (worlds.isEmpty()) {
+            return false;
+        }
+        Path file = worlds.get(0).getWorldFolder().toPath().resolve("playerdata").resolve(player.getUniqueId() + ".dat");
+        if (!Files.isRegularFile(file)) {
             return false;
         }
 
         try {
             Nbt.FileData data = Nbt.readCompressed(file);
-            applyLocation(data.root(), location);
+            Nbt.Compound root = data.root();
+            World world = location.getWorld();
+            UUID worldId = world.getUID();
+            root.put("Pos", new Nbt.ListTag(Nbt.DOUBLE, List.of(
+                    new Nbt.DoubleTag(location.getX()),
+                    new Nbt.DoubleTag(location.getY()),
+                    new Nbt.DoubleTag(location.getZ())
+            )));
+            root.put("Rotation", new Nbt.ListTag(Nbt.FLOAT, List.of(
+                    new Nbt.FloatTag(location.getYaw()),
+                    new Nbt.FloatTag(location.getPitch())
+            )));
+            root.put("Dimension", new Nbt.StringTag(world.getKey().toString()));
+            root.put("WorldUUIDMost", new Nbt.LongTag(worldId.getMostSignificantBits()));
+            root.put("WorldUUIDLeast", new Nbt.LongTag(worldId.getLeastSignificantBits()));
             Nbt.writeCompressed(file, data);
             return true;
         } catch (IOException | RuntimeException exception) {
             plugin.getLogger().warning("Could not write player data for " + player.getUniqueId() + ": " + exception.getMessage());
             return false;
         }
-    }
-
-    private void applyLocation(Nbt.Compound root, Location location) {
-        World world = location.getWorld();
-        UUID worldId = world.getUID();
-        root.put("Pos", new Nbt.ListTag(Nbt.DOUBLE, List.of(
-                new Nbt.DoubleTag(location.getX()),
-                new Nbt.DoubleTag(location.getY()),
-                new Nbt.DoubleTag(location.getZ())
-        )));
-        root.put("Rotation", new Nbt.ListTag(Nbt.FLOAT, List.of(
-                new Nbt.FloatTag(location.getYaw()),
-                new Nbt.FloatTag(location.getPitch())
-        )));
-        root.put("Dimension", new Nbt.StringTag(world.getKey().toString()));
-        root.put("WorldUUIDMost", new Nbt.LongTag(worldId.getMostSignificantBits()));
-        root.put("WorldUUIDLeast", new Nbt.LongTag(worldId.getLeastSignificantBits()));
-    }
-
-    private Path playerDataFile(UUID uuid) {
-        List<World> worlds = Bukkit.getWorlds();
-        if (worlds.isEmpty()) {
-            return null;
-        }
-        return worlds.get(0).getWorldFolder().toPath().resolve("playerdata").resolve(uuid + ".dat");
     }
 }
