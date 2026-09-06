@@ -169,62 +169,88 @@ final class Nbt {
     }
 
     private static void writePayload(Tag tag, DataOutput out) throws IOException {
-        switch (tag) {
-            case ByteTag(byte value) -> out.writeByte(value);
-            case ShortTag(short value) -> out.writeShort(value);
-            case IntTag(int value) -> out.writeInt(value);
-            case LongTag(long value) -> out.writeLong(value);
-            case FloatTag(float value) -> out.writeFloat(value);
-            case DoubleTag(double value) -> out.writeDouble(value);
-            case ByteArrayTag(byte[] value) -> {
-                out.writeInt(value.length);
-                out.write(value);
+        if (tag instanceof ByteTag value) {
+            out.writeByte(value.value());
+        } else if (tag instanceof ShortTag value) {
+            out.writeShort(value.value());
+        } else if (tag instanceof IntTag value) {
+            out.writeInt(value.value());
+        } else if (tag instanceof LongTag value) {
+            out.writeLong(value.value());
+        } else if (tag instanceof FloatTag value) {
+            out.writeFloat(value.value());
+        } else if (tag instanceof DoubleTag value) {
+            out.writeDouble(value.value());
+        } else if (tag instanceof ByteArrayTag value) {
+            out.writeInt(value.value().length);
+            out.write(value.value());
+        } else if (tag instanceof StringTag value) {
+            out.writeUTF(value.value());
+        } else if (tag instanceof ListTag list) {
+            out.writeByte(list.type());
+            out.writeInt(list.values().size());
+            for (Tag item : list.values()) {
+                writePayload(item, out);
             }
-            case StringTag(String value) -> out.writeUTF(value);
-            case ListTag(int elementType, List<Tag> values) -> {
-                out.writeByte(elementType);
-                out.writeInt(values.size());
-                for (Tag value : values) {
-                    writePayload(value, out);
-                }
+        } else if (tag instanceof Compound compound) {
+            for (Map.Entry<String, Tag> entry : compound.tags().entrySet()) {
+                out.writeByte(typeOf(entry.getValue()));
+                out.writeUTF(entry.getKey());
+                writePayload(entry.getValue(), out);
             }
-            case Compound(Map<String, Tag> tags) -> {
-                for (Map.Entry<String, Tag> entry : tags.entrySet()) {
-                    out.writeByte(typeOf(entry.getValue()));
-                    out.writeUTF(entry.getKey());
-                    writePayload(entry.getValue(), out);
-                }
-                out.writeByte(END);
+            out.writeByte(END);
+        } else if (tag instanceof IntArrayTag value) {
+            out.writeInt(value.value().length);
+            for (int item : value.value()) {
+                out.writeInt(item);
             }
-            case IntArrayTag(int[] value) -> {
-                out.writeInt(value.length);
-                for (int item : value) {
-                    out.writeInt(item);
-                }
+        } else if (tag instanceof LongArrayTag value) {
+            out.writeInt(value.value().length);
+            for (long item : value.value()) {
+                out.writeLong(item);
             }
-            case LongArrayTag(long[] value) -> {
-                out.writeInt(value.length);
-                for (long item : value) {
-                    out.writeLong(item);
-                }
-            }
+        } else {
+            throw new IOException("Unknown NBT tag: " + tag);
         }
     }
 
     private static int typeOf(Tag tag) {
-        return switch (tag) {
-            case ByteTag ignored -> BYTE;
-            case ShortTag ignored -> SHORT;
-            case IntTag ignored -> INT;
-            case LongTag ignored -> LONG;
-            case FloatTag ignored -> FLOAT;
-            case DoubleTag ignored -> DOUBLE;
-            case ByteArrayTag ignored -> BYTE_ARRAY;
-            case StringTag ignored -> STRING;
-            case ListTag ignored -> LIST;
-            case Compound ignored -> COMPOUND;
-            case IntArrayTag ignored -> INT_ARRAY;
-            case LongArrayTag ignored -> LONG_ARRAY;
-        };
+        if (tag instanceof ByteTag) {
+            return BYTE;
+        }
+        if (tag instanceof ShortTag) {
+            return SHORT;
+        }
+        if (tag instanceof IntTag) {
+            return INT;
+        }
+        if (tag instanceof LongTag) {
+            return LONG;
+        }
+        if (tag instanceof FloatTag) {
+            return FLOAT;
+        }
+        if (tag instanceof DoubleTag) {
+            return DOUBLE;
+        }
+        if (tag instanceof ByteArrayTag) {
+            return BYTE_ARRAY;
+        }
+        if (tag instanceof StringTag) {
+            return STRING;
+        }
+        if (tag instanceof ListTag) {
+            return LIST;
+        }
+        if (tag instanceof Compound) {
+            return COMPOUND;
+        }
+        if (tag instanceof IntArrayTag) {
+            return INT_ARRAY;
+        }
+        if (tag instanceof LongArrayTag) {
+            return LONG_ARRAY;
+        }
+        throw new IllegalArgumentException("Unknown NBT tag: " + tag);
     }
 }
