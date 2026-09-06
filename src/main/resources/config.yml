@@ -1,0 +1,12 @@
+messages:
+  prefix: "&8[&6OfflineTP&8]&r "
+  usage: "{prefix}&e/offlinetp <target> [otherTarget]"
+  no-permission: "{prefix}&cYou do not have permission to do that."
+  player-only: "{prefix}&cOnly players can teleport to another player."
+  player-not-found: "{prefix}&cPlayer &f{player} &cwas not found."
+  never-played: "{prefix}&cPlayer &f{player} &chas never joined this server."
+  world-unavailable: "{prefix}&cWorld &f{world} &cis not loaded."
+  location-unavailable: "{prefix}&cCould not read the last location for &f{player}&c."
+  teleported-to: "{prefix}&aTeleported to &f{player}&a."
+  teleported-player: "{prefix}&aTeleported &f{target} &ato &f{other}&a."
+  reloaded: "{prefix}&aConfiguration reloaded."
