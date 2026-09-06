@@ -4,6 +4,7 @@ import io.github.derexxd.offlineTeleport.nbt.NbtManager;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -34,7 +35,7 @@ public final class OfflineTeleportCommand implements CommandExecutor, TabComplet
                 sender.sendMessage(ChatColor.RED + "You do not have permission to do that.");
                 return true;
             }
-            sender.sendMessage(ChatColor.YELLOW + "/" + label + " <target> [otherTarget]");
+            sendUsage(sender, label);
             return true;
         }
         if (args.length == 1) {
@@ -45,7 +46,11 @@ public final class OfflineTeleportCommand implements CommandExecutor, TabComplet
             teleportPlayerToPlayer(sender, args[0], args[1]);
             return true;
         }
-        sender.sendMessage(ChatColor.YELLOW + "/" + label + " <target> [otherTarget]");
+        if (args.length == 4) {
+            teleportPlayerToCoords(sender, args[0], args[1], args[2], args[3]);
+            return true;
+        }
+        sendUsage(sender, label);
         return true;
     }
 
@@ -107,19 +112,91 @@ public final class OfflineTeleportCommand implements CommandExecutor, TabComplet
             return;
         }
 
-        if (target.isOnline()) {
-            Player online = target.getPlayer();
-            if (online == null || !online.teleport(location)) {
-                sender.sendMessage(ChatColor.RED + "Could not read the last location for " + ChatColor.WHITE + nameOf(target, targetName) + ChatColor.RED + ".");
-                return;
-            }
-        } else if (!nbt.writeLocation(target, location)) {
-            sender.sendMessage(ChatColor.RED + "Could not update the last location for " + ChatColor.WHITE + nameOf(target, targetName) + ChatColor.RED + ".");
+        if (!movePlayer(sender, target, targetName, location)) {
             return;
         }
 
         sender.sendMessage(ChatColor.GREEN + "Teleported " + ChatColor.WHITE + nameOf(target, targetName)
                 + ChatColor.GREEN + " to " + ChatColor.WHITE + nameOf(other, otherName) + ChatColor.GREEN + ".");
+    }
+
+    private void teleportPlayerToCoords(CommandSender sender, String targetName, String xArg, String yArg, String zArg) {
+        if (!sender.hasPermission(PERMISSION_FULL) && !sender.hasPermission(PERMISSION_PLAYER_TO_PLAYER)) {
+            sender.sendMessage(ChatColor.RED + "You do not have permission to do that.");
+            return;
+        }
+
+        OfflinePlayer target = requirePlayer(sender, targetName);
+        if (target == null) {
+            return;
+        }
+
+        Double x = parseCoordinate(sender, xArg);
+        Double y = parseCoordinate(sender, yArg);
+        Double z = parseCoordinate(sender, zArg);
+        if (x == null || y == null || z == null) {
+            return;
+        }
+
+        World world = resolveWorld(sender, target);
+        if (world == null) {
+            sender.sendMessage(ChatColor.RED + "Could not determine a world for those coordinates.");
+            return;
+        }
+
+        Location current = nbt.readLocation(target);
+        float yaw = current != null ? current.getYaw() : 0F;
+        float pitch = current != null ? current.getPitch() : 0F;
+        Location location = new Location(world, x, y, z, yaw, pitch);
+
+        if (!movePlayer(sender, target, targetName, location)) {
+            return;
+        }
+
+        sender.sendMessage(ChatColor.GREEN + "Teleported " + ChatColor.WHITE + nameOf(target, targetName)
+                + ChatColor.GREEN + " to " + ChatColor.WHITE + formatCoords(location) + ChatColor.GREEN + ".");
+    }
+
+    private boolean movePlayer(CommandSender sender, OfflinePlayer target, String targetName, Location location) {
+        if (target.isOnline()) {
+            Player online = target.getPlayer();
+            if (online == null || !online.teleport(location)) {
+                sender.sendMessage(ChatColor.RED + "Could not teleport " + ChatColor.WHITE + nameOf(target, targetName) + ChatColor.RED + ".");
+                return false;
+            }
+            return true;
+        }
+        if (!nbt.writeLocation(target, location)) {
+            sender.sendMessage(ChatColor.RED + "Could not update the last location for " + ChatColor.WHITE + nameOf(target, targetName) + ChatColor.RED + ".");
+            return false;
+        }
+        return true;
+    }
+
+    private World resolveWorld(CommandSender sender, OfflinePlayer target) {
+        if (sender instanceof Player player) {
+            return player.getWorld();
+        }
+        Location current = nbt.readLocation(target);
+        return current != null ? current.getWorld() : null;
+    }
+
+    private Double parseCoordinate(CommandSender sender, String value) {
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException ignored) {
+            sender.sendMessage(ChatColor.RED + "Invalid coordinate: " + ChatColor.WHITE + value);
+            return null;
+        }
+    }
+
+    private String formatCoords(Location location) {
+        return location.getBlockX() + " " + location.getBlockY() + " " + location.getBlockZ();
+    }
+
+    private void sendUsage(CommandSender sender, String label) {
+        sender.sendMessage(ChatColor.YELLOW + "/" + label + " <target> [otherTarget]");
+        sender.sendMessage(ChatColor.YELLOW + "/" + label + " <target> <x> <y> <z>");
     }
 
     private OfflinePlayer requirePlayer(CommandSender sender, String name) {
