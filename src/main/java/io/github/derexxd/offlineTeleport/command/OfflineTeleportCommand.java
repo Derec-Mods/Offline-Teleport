@@ -8,18 +8,24 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
-public final class OfflineTeleportCommand implements CommandExecutor {
+import java.util.Collections;
+import java.util.List;
+
+public final class OfflineTeleportCommand implements CommandExecutor, TabCompleter {
 
     public static final String PERMISSION_FULL = "offlinetp.offlinetp";
     public static final String PERMISSION_TO_PLAYER = "offlinetp.to-player";
     public static final String PERMISSION_PLAYER_TO_PLAYER = "offlinetp.player-to-player";
 
     private final OfflineTeleport plugin;
+    private final PlayerNameCache names;
 
-    public OfflineTeleportCommand(OfflineTeleport plugin) {
+    public OfflineTeleportCommand(OfflineTeleport plugin, PlayerNameCache names) {
         this.plugin = plugin;
+        this.names = names;
     }
 
     @Override
@@ -42,6 +48,20 @@ public final class OfflineTeleportCommand implements CommandExecutor {
         }
         messages().send(sender, "usage");
         return true;
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
+        if (!canUseAny(sender)) {
+            return Collections.emptyList();
+        }
+        if (args.length == 1) {
+            return names.suggestOffline(args[0]);
+        }
+        if (args.length == 2) {
+            return names.suggestAll(args[1]);
+        }
+        return Collections.emptyList();
     }
 
     private void teleportTo(CommandSender sender, String targetName) {

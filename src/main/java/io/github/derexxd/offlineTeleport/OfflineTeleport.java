@@ -1,6 +1,7 @@
 package io.github.derexxd.offlineTeleport;
 
 import io.github.derexxd.offlineTeleport.command.OfflineTeleportCommand;
+import io.github.derexxd.offlineTeleport.command.PlayerNameCache;
 import io.github.derexxd.offlineTeleport.config.PluginMessages;
 import io.github.derexxd.offlineTeleport.nbt.NbtManager;
 import org.bukkit.command.PluginCommand;
@@ -17,9 +18,15 @@ public final class OfflineTeleport extends JavaPlugin {
         messages = new PluginMessages(this);
         nbtManager = new NbtManager(this);
 
+        PlayerNameCache names = new PlayerNameCache();
+        names.load();
+        getServer().getPluginManager().registerEvents(names, this);
+
         PluginCommand offlinetp = getCommand("offlinetp");
         if (offlinetp != null) {
-            offlinetp.setExecutor(new OfflineTeleportCommand(this));
+            OfflineTeleportCommand command = new OfflineTeleportCommand(this, names);
+            offlinetp.setExecutor(command);
+            offlinetp.setTabCompleter(command);
         }
     }
 
