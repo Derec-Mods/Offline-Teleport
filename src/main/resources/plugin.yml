@@ -12,11 +12,6 @@ commands:
     description: Teleport offline player or to offline player
     aliases: [otp, offlineteleport]
     usage: /<command> [target] [otherTarget]
-  offlinetp-reload:
-    description: Reloads OfflineTP plugin
-    aliases: [otp-reload, offlineteleport-reload]
-    permission: offlinetp.reload
-    usage: /<command>
 
 permissions:
   offlinetp.offlinetp:
@@ -27,7 +22,4 @@ permissions:
     default: op
   offlinetp.player-to-player:
     description: use /offlinetp only for player teleportation to player
-    default: op
-  offlinetp.reload:
-    description: to use /offlinetp-reload
     default: op

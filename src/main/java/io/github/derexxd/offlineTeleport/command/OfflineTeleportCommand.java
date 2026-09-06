@@ -1,8 +1,7 @@
 package io.github.derexxd.offlineTeleport.command;
 
-import io.github.derexxd.offlineTeleport.OfflineTeleport;
-import io.github.derexxd.offlineTeleport.config.PluginMessages;
 import io.github.derexxd.offlineTeleport.nbt.NbtManager;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
@@ -20,11 +19,11 @@ public final class OfflineTeleportCommand implements CommandExecutor, TabComplet
     public static final String PERMISSION_TO_PLAYER = "offlinetp.to-player";
     public static final String PERMISSION_PLAYER_TO_PLAYER = "offlinetp.player-to-player";
 
-    private final OfflineTeleport plugin;
+    private final NbtManager nbt;
     private final PlayerNameCache names;
 
-    public OfflineTeleportCommand(OfflineTeleport plugin, PlayerNameCache names) {
-        this.plugin = plugin;
+    public OfflineTeleportCommand(NbtManager nbt, PlayerNameCache names) {
+        this.nbt = nbt;
         this.names = names;
     }
 
@@ -32,10 +31,10 @@ public final class OfflineTeleportCommand implements CommandExecutor, TabComplet
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
             if (!canUseAny(sender)) {
-                messages().send(sender, "no-permission");
+                sender.sendMessage(ChatColor.RED + "You do not have permission to do that.");
                 return true;
             }
-            messages().send(sender, "usage");
+            sender.sendMessage(ChatColor.YELLOW + "/" + label + " <target> [otherTarget]");
             return true;
         }
         if (args.length == 1) {
@@ -46,7 +45,7 @@ public final class OfflineTeleportCommand implements CommandExecutor, TabComplet
             teleportPlayerToPlayer(sender, args[0], args[1]);
             return true;
         }
-        messages().send(sender, "usage");
+        sender.sendMessage(ChatColor.YELLOW + "/" + label + " <target> [otherTarget]");
         return true;
     }
 
@@ -66,11 +65,11 @@ public final class OfflineTeleportCommand implements CommandExecutor, TabComplet
 
     private void teleportTo(CommandSender sender, String targetName) {
         if (!sender.hasPermission(PERMISSION_FULL) && !sender.hasPermission(PERMISSION_TO_PLAYER)) {
-            messages().send(sender, "no-permission");
+            sender.sendMessage(ChatColor.RED + "You do not have permission to do that.");
             return;
         }
         if (!(sender instanceof Player player)) {
-            messages().send(sender, "player-only");
+            sender.sendMessage(ChatColor.RED + "Only players can teleport to another player.");
             return;
         }
 
@@ -85,12 +84,12 @@ public final class OfflineTeleportCommand implements CommandExecutor, TabComplet
         }
 
         player.teleport(location);
-        messages().send(sender, "teleported-to", "player", nameOf(target, targetName));
+        sender.sendMessage(ChatColor.GREEN + "Teleported to " + ChatColor.WHITE + nameOf(target, targetName) + ChatColor.GREEN + ".");
     }
 
     private void teleportPlayerToPlayer(CommandSender sender, String targetName, String otherName) {
         if (!sender.hasPermission(PERMISSION_FULL) && !sender.hasPermission(PERMISSION_PLAYER_TO_PLAYER)) {
-            messages().send(sender, "no-permission");
+            sender.sendMessage(ChatColor.RED + "You do not have permission to do that.");
             return;
         }
 
@@ -111,38 +110,37 @@ public final class OfflineTeleportCommand implements CommandExecutor, TabComplet
         if (target.isOnline()) {
             Player online = target.getPlayer();
             if (online == null || !online.teleport(location)) {
-                messages().send(sender, "location-unavailable", "player", nameOf(target, targetName));
+                sender.sendMessage(ChatColor.RED + "Could not read the last location for " + ChatColor.WHITE + nameOf(target, targetName) + ChatColor.RED + ".");
                 return;
             }
-        } else if (!nbt().writeLocation(target, location)) {
-            messages().send(sender, "location-unavailable", "player", nameOf(target, targetName));
+        } else if (!nbt.writeLocation(target, location)) {
+            sender.sendMessage(ChatColor.RED + "Could not update the last location for " + ChatColor.WHITE + nameOf(target, targetName) + ChatColor.RED + ".");
             return;
         }
 
-        messages().send(sender, "teleported-player",
-                "target", nameOf(target, targetName),
-                "other", nameOf(other, otherName));
+        sender.sendMessage(ChatColor.GREEN + "Teleported " + ChatColor.WHITE + nameOf(target, targetName)
+                + ChatColor.GREEN + " to " + ChatColor.WHITE + nameOf(other, otherName) + ChatColor.GREEN + ".");
     }
 
     private OfflinePlayer requirePlayer(CommandSender sender, String name) {
-        return nbt().findByName(name).orElseGet(() -> {
-            messages().send(sender, "player-not-found", "player", name);
+        return nbt.findByName(name).orElseGet(() -> {
+            sender.sendMessage(ChatColor.RED + "Player " + ChatColor.WHITE + name + ChatColor.RED + " was not found.");
             return null;
         });
     }
 
     private Location requireLocation(CommandSender sender, OfflinePlayer player, String fallbackName) {
-        Location location = nbt().readLocation(player);
+        Location location = nbt.readLocation(player);
         if (location == null) {
             if (!player.hasPlayedBefore() && !player.isOnline()) {
-                messages().send(sender, "never-played", "player", nameOf(player, fallbackName));
+                sender.sendMessage(ChatColor.RED + "Player " + ChatColor.WHITE + nameOf(player, fallbackName) + ChatColor.RED + " has never joined this server.");
             } else {
-                messages().send(sender, "location-unavailable", "player", nameOf(player, fallbackName));
+                sender.sendMessage(ChatColor.RED + "Could not read the last location for " + ChatColor.WHITE + nameOf(player, fallbackName) + ChatColor.RED + ".");
             }
             return null;
         }
         if (location.getWorld() == null) {
-            messages().send(sender, "world-unavailable", "world", "unknown");
+            sender.sendMessage(ChatColor.RED + "That player's world is not loaded.");
             return null;
         }
         return location;
@@ -157,13 +155,5 @@ public final class OfflineTeleportCommand implements CommandExecutor, TabComplet
     private String nameOf(OfflinePlayer player, String fallback) {
         String name = player.getName();
         return name != null ? name : fallback;
-    }
-
-    private PluginMessages messages() {
-        return plugin.getMessages();
-    }
-
-    private NbtManager nbt() {
-        return plugin.getNbtManager();
     }
 }
