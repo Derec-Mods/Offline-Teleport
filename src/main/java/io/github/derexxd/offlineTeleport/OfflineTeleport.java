@@ -13,7 +13,7 @@ public final class OfflineTeleport extends JavaPlugin {
     public void onEnable() {
         saveDefaultConfig();
         messages = new PluginMessages(this);
-        locations = new OfflineLocationService();
+        locations = new OfflineLocationService(this);
     }
 
     public PluginMessages getMessages() {
