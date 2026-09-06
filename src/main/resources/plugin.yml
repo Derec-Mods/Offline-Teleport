@@ -1,7 +1,7 @@
 name: OfflineTeleport
 version: '1.0.0.0'
 main: io.github.derexxd.offlineTeleport.OfflineTeleport
-api-version: '1.18'
+api-version: '1.20.4'
 prefix: DerexXD
 authors: [ DerexXD ]
 description: Admin utility to teleport offline players
