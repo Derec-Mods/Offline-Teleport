@@ -6,3 +6,28 @@ prefix: DerexXD
 authors: [ DerexXD ]
 description: Admin utility to teleport offline players
 website: https://www.derekchen.dev/
+
+commands:
+  offlinetp:
+    description: Teleport offline player or to offline player
+    aliases: [otp, offlineteleport]
+    usage: /<command> [target] [otherTarget]
+  offlinetp-reload:
+    description: Reloads OfflineTP plugin
+    aliases: [otp-reload, offlineteleport-reload]
+    permission: offlinetp.reload
+    usage: /<command>
+
+permissions:
+  offlinetp.offlinetp:
+    description: to use /offlinetp
+    default: op
+  offlinetp.to-player:
+    description: use /offlinetp only for teleportation to player
+    default: op
+  offlinetp.player-to-player:
+    description: use /offlinetp only for player teleportation to player
+    default: op
+  offlinetp.reload:
+    description: to use /offlinetp-reload
+    default: op
