@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.logging.Level;
 
 public final class NbtManager {
 
@@ -35,16 +36,33 @@ public final class NbtManager {
     }
 
     public boolean writeLocation(OfflinePlayer player, Location location) {
-        if (player.isOnline() || location == null || location.getWorld() == null) {
+        String who = describe(player);
+        if (player.isOnline()) {
+            debug("write skipped for " + who + ": player is online, so player.dat must not be edited");
+            return false;
+        }
+        if (location == null) {
+            debug("write skipped for " + who + ": destination location is null");
+            return false;
+        }
+        if (location.getWorld() == null) {
+            debug("write skipped for " + who + ": destination world is null");
             return false;
         }
 
         List<World> worlds = Bukkit.getWorlds();
         if (worlds.isEmpty()) {
+            debug("write skipped for " + who + ": server has no loaded worlds");
             return false;
         }
         Path file = worlds.get(0).getWorldFolder().toPath().resolve("playerdata").resolve(player.getUniqueId() + ".dat");
         if (!Files.isRegularFile(file)) {
+            debug("write skipped for " + who + ": player.dat not found at " + file.toAbsolutePath()
+                    + " (searched default world '" + worlds.get(0).getName() + "')");
+            for (World world : worlds) {
+                Path other = world.getWorldFolder().toPath().resolve("playerdata").resolve(player.getUniqueId() + ".dat");
+                debug("  checked " + other.toAbsolutePath() + " exists=" + Files.isRegularFile(other));
+            }
             return false;
         }
 
@@ -68,8 +86,18 @@ public final class NbtManager {
             Nbt.writeCompressed(file, data);
             return true;
         } catch (IOException | RuntimeException exception) {
-            plugin.getLogger().warning("Could not write player data for " + player.getUniqueId() + ": " + exception.getMessage());
+            debug("write failed for " + who + " at " + file.toAbsolutePath() + ": " + exception);
+            plugin.getLogger().log(Level.WARNING, "OfflineTP NBT write exception", exception);
             return false;
         }
+    }
+
+    public void debug(String reason) {
+        plugin.getLogger().warning("[OfflineTP] " + reason);
+    }
+
+    private String describe(OfflinePlayer player) {
+        String name = player.getName();
+        return (name != null ? name : "unknown") + " (" + player.getUniqueId() + ")";
     }
 }

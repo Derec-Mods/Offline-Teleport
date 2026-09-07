@@ -7,7 +7,6 @@ import java.io.DataInputStream;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -106,11 +105,7 @@ final class Nbt {
             out.writeUTF(data.name());
             writePayload(data.root(), out);
         }
-        try {
-            Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-        } catch (AtomicMoveNotSupportedException ignored) {
-            Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING);
-        }
+        Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING);
     }
 
     private static Tag readPayload(int type, DataInput in) throws IOException {

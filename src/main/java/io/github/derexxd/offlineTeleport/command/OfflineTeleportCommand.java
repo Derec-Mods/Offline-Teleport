@@ -74,6 +74,7 @@ public final class OfflineTeleportCommand implements CommandExecutor, TabComplet
             return;
         }
         if (!(sender instanceof Player player)) {
+            nbt.debug("teleport-to aborted: sender is not a player (" + sender.getName() + ")");
             sender.sendMessage(ChatColor.RED + "Only players can teleport to another player.");
             return;
         }
@@ -88,7 +89,12 @@ public final class OfflineTeleportCommand implements CommandExecutor, TabComplet
             return;
         }
 
-        player.teleport(location);
+        if (!player.teleport(location)) {
+            nbt.debug("teleport-to failed: " + sender.getName() + " could not teleport to "
+                    + nameOf(target, targetName) + " at " + describeLocation(location));
+            sender.sendMessage(ChatColor.RED + "Could not teleport to " + ChatColor.WHITE + nameOf(target, targetName) + ChatColor.RED + ".");
+            return;
+        }
         sender.sendMessage(ChatColor.GREEN + "Teleported to " + ChatColor.WHITE + nameOf(target, targetName) + ChatColor.GREEN + ".");
     }
 
@@ -146,6 +152,9 @@ public final class OfflineTeleportCommand implements CommandExecutor, TabComplet
             world = currentWorld != null ? currentWorld.getWorld() : null;
         }
         if (world == null) {
+            Location currentWorld = target.getLocation();
+            nbt.debug("coords aborted for " + nameOf(target, targetName) + ": no world (sender="
+                    + sender.getName() + ", targetLocation=" + (currentWorld == null ? "null" : describeLocation(currentWorld)) + ")");
             sender.sendMessage(ChatColor.RED + "Could not determine a world for those coordinates.");
             return;
         }
@@ -166,7 +175,13 @@ public final class OfflineTeleportCommand implements CommandExecutor, TabComplet
     private boolean movePlayer(CommandSender sender, OfflinePlayer target, String targetName, Location location) {
         if (target.isOnline()) {
             Player online = target.getPlayer();
-            if (online == null || !online.teleport(location)) {
+            if (online == null) {
+                nbt.debug("move failed for " + nameOf(target, targetName) + ": isOnline=true but getPlayer() is null");
+                sender.sendMessage(ChatColor.RED + "Could not teleport " + ChatColor.WHITE + nameOf(target, targetName) + ChatColor.RED + ".");
+                return false;
+            }
+            if (!online.teleport(location)) {
+                nbt.debug("move failed for " + nameOf(target, targetName) + ": live teleport returned false to " + describeLocation(location));
                 sender.sendMessage(ChatColor.RED + "Could not teleport " + ChatColor.WHITE + nameOf(target, targetName) + ChatColor.RED + ".");
                 return false;
             }
@@ -183,6 +198,7 @@ public final class OfflineTeleportCommand implements CommandExecutor, TabComplet
         try {
             return Double.parseDouble(value);
         } catch (NumberFormatException ignored) {
+            nbt.debug("invalid coordinate '" + value + "' from " + sender.getName());
             sender.sendMessage(ChatColor.RED + "Invalid coordinate: " + ChatColor.WHITE + value);
             return null;
         }
@@ -195,6 +211,7 @@ public final class OfflineTeleportCommand implements CommandExecutor, TabComplet
 
     private OfflinePlayer requirePlayer(CommandSender sender, String name) {
         return nbt.findByName(name).orElseGet(() -> {
+            nbt.debug("player not found: '" + name + "' is not in Bukkit.getOfflinePlayers()");
             sender.sendMessage(ChatColor.RED + "Player " + ChatColor.WHITE + name + ChatColor.RED + " was not found.");
             return null;
         });
@@ -203,6 +220,8 @@ public final class OfflineTeleportCommand implements CommandExecutor, TabComplet
     private Location requireLocation(CommandSender sender, OfflinePlayer player, String fallbackName) {
         Location location = player.getLocation();
         if (location == null) {
+            nbt.debug("no location for " + nameOf(player, fallbackName) + " uuid=" + player.getUniqueId()
+                    + " hasPlayedBefore=" + player.hasPlayedBefore() + " isOnline=" + player.isOnline());
             if (!player.hasPlayedBefore() && !player.isOnline()) {
                 sender.sendMessage(ChatColor.RED + "Player " + ChatColor.WHITE + nameOf(player, fallbackName) + ChatColor.RED + " has never joined this server.");
             } else {
@@ -211,10 +230,19 @@ public final class OfflineTeleportCommand implements CommandExecutor, TabComplet
             return null;
         }
         if (location.getWorld() == null) {
+            nbt.debug("world missing for " + nameOf(player, fallbackName) + " at "
+                    + location.getX() + "," + location.getY() + "," + location.getZ()
+                    + " (Paper returned a location with a null world)");
             sender.sendMessage(ChatColor.RED + "That player's world is not loaded.");
             return null;
         }
         return location;
+    }
+
+    private String describeLocation(Location location) {
+        World world = location.getWorld();
+        String worldName = world != null ? world.getName() : "null-world";
+        return worldName + " " + location.getX() + "," + location.getY() + "," + location.getZ();
     }
 
     private boolean canUseAny(CommandSender sender) {
