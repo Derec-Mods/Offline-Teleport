@@ -8,12 +8,12 @@ Admins have needed offline player teleportation for as long as multiplayer serve
 
 ## Features
 - **Teleport to Offline Players**: Teleport directly to where an offline player logged out.
-- **Move Offline Players**: Teleport an offline player to an online player, or vice versa, before they even rejoin.
-- **Coordinate Teleportation**: Send offline players directly to custom X, Y, Z coordinates in any loaded world.
-- **Safe & Native NBT Engine**: Fast, zero-dependency NBT parser and writer that safely updates `player.dat` without NMS reflection or heavy library overhead.
-- **Seamless Live Support**: Automatically falls back to standard live teleportation if the player is currently online.
-- **Smart Tab Completion**: Fast, cached offline player name suggestions for easy command usage.
-- **Granular Permissions**: Restrict usage with fine-grained permission nodes (`offlinetp.offlinetp`, `offlinetp.to-player`, `offlinetp.player-to-player`).
+- **Move Offline Players**: Move an offline player to another player before they log back in. They spawn at the new location when they rejoin.
+- **Coordinate Teleportation**: Send offline players directly to specific X, Y, Z coordinates.
+- **Safe NBT Editing**: Safely edits `player.dat` files with zero lag or heavy dependencies.
+- **Online & Offline Support**: Works seamlessly whether targets are online or offline. If someone is online, it teleports them normally.
+- **Tab Completion**: Auto-completes offline player names right in chat as you type.
+- **Permission Nodes**: Control access easily with simple permissions for staff ranks.
 
 ## Commands & Permissions
 - `/offlinetp <target>` (aliases: `/otp`, `/offlineteleport`) — Teleport to target player's logout location (`offlinetp.to-player` or `offlinetp.offlinetp`)
