@@ -4,7 +4,7 @@
 
 Essential admin utility for teleporting to offline players' last logout locations, teleporting offline players to other players, or moving offline players directly to specific coordinates. Perfect for server moderation, rescuing players stuck in glitched chunks, and server administration!
 
-Admins have needed offline player teleportation for as long as multiplayer servers have existed! Most existing solutions are either bloated, abandoned, or rely on fragile NMS reflection hacks that break on every minor Minecraft update. 
+Admins have needed offline player teleportation for as long as multiplayer servers have existed! 
 
 ## Features
 - **Teleport to Offline Players**: Teleport directly to where an offline player logged out.
