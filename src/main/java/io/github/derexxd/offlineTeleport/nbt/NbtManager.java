@@ -55,13 +55,12 @@ public final class NbtManager {
             debug("write skipped for " + who + ": server has no loaded worlds");
             return false;
         }
-        Path file = worlds.get(0).getWorldFolder().toPath().resolve("playerdata").resolve(player.getUniqueId() + ".dat");
-        if (!Files.isRegularFile(file)) {
-            debug("write skipped for " + who + ": player.dat not found at " + file.toAbsolutePath()
-                    + " (searched default world '" + worlds.get(0).getName() + "')");
-            for (World world : worlds) {
-                Path other = world.getWorldFolder().toPath().resolve("playerdata").resolve(player.getUniqueId() + ".dat");
-                debug("  checked " + other.toAbsolutePath() + " exists=" + Files.isRegularFile(other));
+        Path file = PlayerDataPaths.find(player.getUniqueId());
+        if (file == null) {
+            debug("write skipped for " + who + ": player.dat not found (layout=" + PlayerDataPaths.layout()
+                    + ", mc=" + PlayerDataPaths.minecraftVersion() + ")");
+            for (Path candidate : PlayerDataPaths.candidates(player.getUniqueId())) {
+                debug("  checked " + candidate.toAbsolutePath() + " exists=" + Files.isRegularFile(candidate));
             }
             return false;
         }
